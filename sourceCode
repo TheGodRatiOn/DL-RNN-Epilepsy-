@@ -1,0 +1,121 @@
+import pandas as pd
+data = "Users/sipov/Desktop/Проэкт/data.csv"
+datadf = pd.read_csv('data.csv', header=0, index_col=0)
+#some functions to explore dataset
+datadf.info()
+datadf.head()
+
+datadf["seizure"] = 0
+for i in range(11500):
+    if datadf["y"][i] == 1:
+        datadf["seizure"][i] = 1 
+    else:
+        datadf["seizure"][i] = 0
+        
+datadf.info
+
+import matplotlib.pyplot as plt
+# plotting an epileptic wave form 
+plt.plot(range(178), datadf.iloc[11496,0:178])
+plt.show()
+
+plt.plot(range(178), datadf.iloc[0,0:178])
+# plotting a non-epileptic wave form 
+plt.show()
+
+datatrain = datadf.drop(["seizure", "y"], axis=1)
+datatrain.info()
+
+# 1. parse the data
+import numpy as np
+wavedata = np.zeros((11500, 178))
+
+print (wavedata.shape)
+
+wavedata = datatrain.to_numpy()
+
+wavedata = wavedata.astype('float64')
+print(wavedata.dtype)
+
+#standardize the data such that it has mean of 0 and standard deviation of 1
+
+mean = wavedata.mean(axis=0)
+wavedata -= mean
+std = wavedata.std(axis=0)
+wavedata /= std
+
+# 3. create the target numpy array
+target = datadf["seizure"].values
+
+print (wavedata.shape)
+
+import tensorflow as tf
+
+from tensorflow.keras import layers
+model = tf.keras.Sequential()
+
+model.add(layers.LSTM(
+    256,
+    activation="tanh",
+    recurrent_activation="sigmoid",
+    use_bias=True,
+    kernel_initializer="glorot_uniform",
+    recurrent_initializer="orthogonal",
+    bias_initializer="zeros",
+    unit_forget_bias=True,
+    kernel_regularizer=tf.keras.regularizers.l2(l=0.005),
+    dropout=0.3,
+    recurrent_dropout=0.0,
+    return_sequences=True,
+    unroll=False,
+    input_shape=(1, 178)))
+
+model.add(layers.Dense(
+    256,
+    activation="relu",
+    use_bias=True,
+    kernel_initializer="glorot_uniform",
+    bias_initializer="zeros",
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    bias_constraint=None,))
+
+model.add(layers.AveragePooling1D(
+    pool_size=1, strides=1, padding="valid", data_format="channels_last"))  
+
+model.add(layers.Dense(
+    1,
+    activation="sigmoid",
+    use_bias=True,
+    kernel_initializer="glorot_uniform",
+    bias_initializer="zeros",
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    kernel_constraint=None,
+    bias_constraint=None,
+))
+
+model.summary()
+
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(wavedata, target, test_size=0.3, random_state=42)
+
+x_train = x_train.reshape(x_train.shape[0], 1, x_train.shape[1])
+x_test = x_test.reshape(x_test.shape[0], 1, x_test.shape[1])
+
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=[tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+history = model.fit(x_train, y_train, epochs=200, batch_size=128, validation_split=0.2, verbose=2)
+
+from sklearn.metrics import roc_curve, auc
+y_pred = model.predict(x_test).ravel()
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(y_test, y_pred)
+AUC = auc(fpr_keras, tpr_keras)
+plt.plot(fpr_keras, tpr_keras, label='Keras Model(area = {:.3f})'.format(AUC))
+plt.xlabel('False positive Rate')
+plt.ylabel('True positive Rate')
+plt.title('ROC curve')
+plt.legend(loc='best')
+plt.show()
