@@ -1,5 +1,7 @@
 import pandas as pd
-data = "Users/sipov/Desktop/Проэкт/data.csv"
+#You can find dataset here
+#https://archive.ics.uci.edu/ml/datasets/Epileptic+Seizure+Recognition
+data = #path to file via URL or systempath
 datadf = pd.read_csv('data.csv', header=0, index_col=0)
 #some functions to explore dataset
 datadf.info()
