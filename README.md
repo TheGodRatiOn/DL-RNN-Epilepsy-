@@ -6,5 +6,5 @@ Required packages
 -matplotlib
 -sklearn
 
-Nothing complex to run the code, just copy the sourseCode and you will be able to run the model
-I was using the JupyterNotebook during the development
+/Nothing complex to run the code, just copy the sourseCode and you will be able to run the model
+/I was using the JupyterNotebook during the development
